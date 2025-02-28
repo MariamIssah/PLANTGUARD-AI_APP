@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/leaf.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlantGuard AI - Plant Disease Detection</title>
+    <link rel="stylesheet" href="styles.css" />
+    <!-- Add TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
+    <!-- Add Font Awesome for icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <!-- Add custom model loader -->
+    <script src="model-loader.js"></script>
+  </head>
+  <body>
+    <div class="app">
+      <!-- Header Banner -->
+      <div class="header-banner">
+        <h1>PlantGuard AI</h1>
+        <p>Advanced Plant Disease Detection</p>
+        <div id="model-status" class="model-status">Loading AI model...</div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="nav-tabs">
+        <button class="tab-button active" data-tab="diagnose">
+          <i class="fas fa-camera"></i>
+          Diagnose
+        </button>
+        <button class="tab-button" data-tab="plants">
+          <i class="fas fa-leaf"></i>
+          My Plants
+        </button>
+        <button class="tab-button" data-tab="market">
+          <i class="fas fa-store"></i>
+          Market
+        </button>
+        <button class="tab-button" data-tab="guide">
+          <i class="fas fa-book"></i>
+          Guide
+        </button>
+      </nav>
+
+      <!-- Diagnose Tab -->
+      <div class="tab-content active" id="diagnose-tab">
+        <h2>Plant Health Analysis</h2>
+        <div class="camera-section">
+          <div id="photo-preview">
+            <div class="preview-placeholder">
+              Take or upload a clear photo of the affected plant part
+            </div>
+          </div>
+          <div class="camera-buttons">
+            <button class="gradient-button" onclick="takePicture()">
+              Take Photo
+            </button>
+            <input
+              type="file"
+              id="fileInput"
+              accept="image/*"
+              style="display: none"
+            />
+            <button
+              class="gradient-button-secondary"
+              onclick="document.getElementById('fileInput').click()"
+            >
+              Upload Photo
+            </button>
+          </div>
+        </div>
+        <div id="diagnosis-result" class="diagnosis-result"></div>
+      </div>
+
+      <!-- Plants Tab -->
+      <div class="tab-content" id="plants-tab">
+        <h2>My Plants History</h2>
+        <div class="plant-list">
+          <!-- Plants will be added here by JavaScript -->
+        </div>
+        <button class="add-button gradient-button" onclick="showAddPlantForm()">
+          + Add Plant
+        </button>
+      </div>
+
+      <!-- Market Tab -->
+      <div class="tab-content" id="market-tab">
+        <h2>Marketplace</h2>
+        <div class="market-header">
+          <div class="market-actions">
+            <button class="gradient-button" onclick="showDealerRegistration()">
+              Register as Dealer
+            </button>
+            <button
+              class="gradient-button-secondary"
+              onclick="showAddProductForm()"
+            >
+              Add Product
+            </button>
+          </div>
+          <div class="search-bar">
+            <input
+              type="text"
+              placeholder="Search products..."
+              onkeyup="searchProducts(this.value)"
+            />
+          </div>
+          <div class="market-filters">
+            <div class="category-pills">
+              <button
+                class="category-pill active"
+                onclick="filterMarket('All')"
+              >
+                All
+              </button>
+              <button class="category-pill" onclick="filterMarket('Treatment')">
+                Treatments
+              </button>
+              <button class="category-pill" onclick="filterMarket('Nutrients')">
+                Nutrients
+              </button>
+              <button class="category-pill" onclick="filterMarket('Tools')">
+                Tools
+              </button>
+              <button class="category-pill" onclick="filterMarket('Seeds')">
+                Seeds
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="market-items">
+          <!-- Market items will be added here by JavaScript -->
+        </div>
+        <!-- Shopping Cart Summary -->
+        <div class="cart-summary">
+          <div class="cart-info">
+            <span id="cart-count">0</span> items
+            <span id="cart-total">$0.00</span>
+          </div>
+          <button class="gradient-button" onclick="showCart()">
+            <i class="fas fa-shopping-cart"></i> View Cart
+          </button>
+        </div>
+      </div>
+
+      <!-- Guide Tab -->
+      <div class="tab-content" id="guide-tab">
+        <h2>Disease & Deficiency Guide</h2>
+        <div class="guide-sections">
+          <div class="guide-section">
+            <h3>Common Diseases</h3>
+            <ul class="guide-list">
+              <li>
+                <h4>Leaf Blight</h4>
+                <p>Yellow patches and brown spots on leaves</p>
+              </li>
+              <li>
+                <h4>Powdery Mildew</h4>
+                <p>White powdery spots on leaves and stems</p>
+              </li>
+              <li>
+                <h4>Root Rot</h4>
+                <p>Wilting despite moist soil, yellowing leaves</p>
+              </li>
+            </ul>
+          </div>
+          <div class="guide-section">
+            <h3>Nutrient Deficiencies</h3>
+            <ul class="guide-list">
+              <li>
+                <h4>Nitrogen (N)</h4>
+                <p>Yellowing of older leaves, stunted growth</p>
+              </li>
+              <li>
+                <h4>Phosphorus (P)</h4>
+                <p>Purple leaf veins, slow growth</p>
+              </li>
+              <li>
+                <h4>Potassium (K)</h4>
+                <p>Brown leaf edges, yellow margins</p>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Plant Form Modal -->
+    <div id="addPlantModal" class="modal">
+      <div class="modal-content">
+        <h3>Add New Plant</h3>
+        <input type="text" id="plantName" placeholder="Plant Name" />
+        <button class="gradient-button" onclick="addPlant()">Add</button>
+        <button class="gradient-button-secondary" onclick="closeModal()">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- Shopping Cart Modal -->
+    <div id="cartModal" class="modal">
+      <div class="modal-content">
+        <span class="close-button" onclick="closeModal()">&times;</span>
+        <h2>Shopping Cart</h2>
+        <div id="cartItems"></div>
+        <div class="cart-total">
+          <h3>Total: <span id="modalCartTotal">$0.00</span></h3>
+        </div>
+        <button class="gradient-button" onclick="checkout()">
+          Proceed to Checkout
+        </button>
+      </div>
+    </div>
+
+    <!-- Dealer Registration Modal -->
+    <div id="dealerRegistrationModal" class="modal">
+      <div class="modal-content dealer-modal">
+        <span
+          class="close-button"
+          onclick="closeModal('dealerRegistrationModal')"
+          >&times;</span
+        >
+        <h2>Register as a Dealer</h2>
+        <form id="dealerRegistrationForm" onsubmit="registerDealer(event)">
+          <div class="form-group">
+            <label for="businessName">Business Name*</label>
+            <input type="text" id="businessName" name="businessName" required />
+          </div>
+
+          <div class="form-group">
+            <label for="businessType">Business Type*</label>
+            <select id="businessType" name="businessType" required>
+              <option value="">Select Business Type</option>
+              <option value="manufacturer">Manufacturer</option>
+              <option value="wholesaler">Wholesaler</option>
+              <option value="retailer">Retailer</option>
+              <option value="farmer">Farmer</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="specialization"
+              >Specialization* (Select multiple)</label
+            >
+            <select id="specialization" name="specialization" multiple required>
+              <option value="Organic Products">Organic Products</option>
+              <option value="Pesticides">Pesticides</option>
+              <option value="Fertilizers">Fertilizers</option>
+              <option value="Tools">Tools</option>
+              <option value="Seeds">Seeds</option>
+              <option value="Plant Care">Plant Care</option>
+            </select>
+            <small>Hold Ctrl/Cmd to select multiple</small>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group half">
+              <label for="contactName">Contact Person*</label>
+              <input type="text" id="contactName" name="contactName" required />
+            </div>
+            <div class="form-group half">
+              <label for="contactPhone">Phone Number*</label>
+              <input
+                type="tel"
+                id="contactPhone"
+                name="contactPhone"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="email">Business Email*</label>
+            <input type="email" id="email" name="email" required />
+          </div>
+
+          <div class="form-group">
+            <label for="website">Website (Optional)</label>
+            <input
+              type="url"
+              id="website"
+              name="website"
+              placeholder="https://"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="address">Business Address*</label>
+            <textarea id="address" name="address" required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group half">
+              <label for="city">City*</label>
+              <input type="text" id="city" name="city" required />
+            </div>
+            <div class="form-group half">
+              <label for="zipCode">ZIP Code*</label>
+              <input type="text" id="zipCode" name="zipCode" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="businessLicense">Business License Number*</label>
+            <input
+              type="text"
+              id="businessLicense"
+              name="businessLicense"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="description">Business Description*</label>
+            <textarea
+              id="description"
+              name="description"
+              required
+              placeholder="Tell us about your business and products..."
+            ></textarea>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <input type="checkbox" id="terms" name="terms" required />
+            <label for="terms">I agree to the Terms and Conditions*</label>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="gradient-button">
+              Register as Dealer
+            </button>
+            <button
+              type="button"
+              class="gradient-button-secondary"
+              onclick="closeModal('dealerRegistrationModal')"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

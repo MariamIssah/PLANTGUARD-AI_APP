@@ -1,0 +1,18 @@
+.plant-details {
+  padding: 16px;
+}
+
+.plant-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.plant-info {
+  margin: 20px 0;
+}
+
+.plant-actions {
+  margin-top: 20px;
+} 

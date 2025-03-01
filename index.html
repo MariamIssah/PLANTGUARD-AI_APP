@@ -2,349 +2,573 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/leaf.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PlantGuard AI - Plant Disease Detection</title>
+    <title>PlantGuard AI</title>
     <link rel="stylesheet" href="styles.css" />
-    <!-- Add TensorFlow.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
-    <!-- Add Font Awesome for icons -->
+    <!-- Font Awesome for icons -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
-    <!-- Add custom model loader -->
-    <script src="model-loader.js"></script>
+    <!-- For simulating ML functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
   </head>
   <body>
-    <div class="app">
-      <!-- Header Banner -->
-      <div class="header-banner">
-        <h1>PlantGuard AI</h1>
-        <p>Advanced Plant Disease Detection</p>
-        <div id="model-status" class="model-status">Loading AI model...</div>
+    <div class="app-container">
+      <!-- Language Selector -->
+      <div class="language-selector">
+        <select
+          id="language-select"
+          onchange="changeLanguage(this.value)"
+          title="Select language"
+        >
+          <option value="en">English</option>
+          <option value="fr">Français</option>
+          <option value="rw">Kinyarwanda</option>
+        </select>
       </div>
 
-      <!-- Navigation -->
-      <nav class="nav-tabs">
-        <button class="tab-button active" data-tab="diagnose">
-          <i class="fas fa-camera"></i>
-          Diagnose
-        </button>
-        <button class="tab-button" data-tab="plants">
+      <!-- App Header -->
+      <header class="app-header">
+        <div class="logo">
           <i class="fas fa-leaf"></i>
-          My Plants
+          <h1>PlantGuard AI</h1>
+        </div>
+        <p id="app-subtitle">Advanced Plant Disease Detection</p>
+        <div id="user-status">
+          <button id="login-btn" onclick="showLoginModal()">Login</button>
+          <div id="user-profile" style="display: none">
+            <img
+              id="profile-pic"
+              src="assets/default-profile.png"
+              alt="Profile"
+            />
+            <span id="username-display">User</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Navigation -->
+      <nav class="main-nav">
+        <button class="nav-btn active" data-tab="diagnose">
+          <i class="fas fa-camera"></i>
+          <span id="nav-diagnose">Diagnose</span>
         </button>
-        <button class="tab-button" data-tab="market">
-          <i class="fas fa-store"></i>
-          Market
+        <button class="nav-btn" data-tab="my-plants">
+          <i class="fas fa-seedling"></i>
+          <span id="nav-plants">My Plants</span>
         </button>
-        <button class="tab-button" data-tab="guide">
+        <button class="nav-btn" data-tab="learn">
           <i class="fas fa-book"></i>
-          Guide
+          <span id="nav-learn">Learn</span>
+        </button>
+        <button class="nav-btn" data-tab="marketplace">
+          <i class="fas fa-store"></i>
+          <span id="nav-market">Market</span>
+        </button>
+        <button class="nav-btn" data-tab="dashboard">
+          <i class="fas fa-chart-line"></i>
+          <span id="nav-dashboard">Dashboard</span>
         </button>
       </nav>
 
-      <!-- Diagnose Tab -->
-      <div class="tab-content active" id="diagnose-tab">
-        <h2>Plant Health Analysis</h2>
-        <div class="camera-section">
-          <div id="photo-preview">
-            <div class="preview-placeholder">
-              Take or upload a clear photo of the affected plant part
+      <!-- Content Tabs -->
+      <main class="content-area">
+        <!-- Diagnose Tab -->
+        <section id="diagnose-tab" class="tab-content active">
+          <h2 id="diagnose-title">Plant Disease Diagnosis</h2>
+          <div class="camera-container">
+            <div id="camera-view" class="camera-view">
+              <div class="placeholder-text" id="camera-placeholder">
+                Take or upload a photo of your plant
+              </div>
+              <video
+                id="camera-feed"
+                autoplay
+                playsinline
+                style="display: none"
+              ></video>
+              <canvas id="photo-canvas" style="display: none"></canvas>
+              <img id="photo-preview" style="display: none" />
+            </div>
+            <div class="camera-controls">
+              <button
+                id="take-photo-btn"
+                class="primary-btn"
+                onclick="startCamera()"
+              >
+                <i class="fas fa-camera"></i>
+                <span id="btn-take-photo">Take Photo</span>
+              </button>
+              <button
+                id="capture-btn"
+                class="primary-btn"
+                style="display: none"
+                onclick="capturePhoto()"
+              >
+                <i class="fas fa-camera"></i>
+                <span id="btn-capture">Capture</span>
+              </button>
+              <button
+                id="retake-btn"
+                class="secondary-btn"
+                style="display: none"
+                onclick="startCamera()"
+              >
+                <i class="fas fa-redo"></i> <span id="btn-retake">Retake</span>
+              </button>
+              <label for="file-upload" class="secondary-btn">
+                <i class="fas fa-upload"></i>
+                <span id="btn-upload">Upload Photo</span>
+              </label>
+              <input
+                id="file-upload"
+                type="file"
+                accept="image/*"
+                style="display: none"
+                onchange="handleFileUpload(event)"
+              />
+              <button
+                id="analyze-btn"
+                class="primary-btn"
+                style="display: none"
+                onclick="analyzeImage()"
+              >
+                <i class="fas fa-search"></i>
+                <span id="btn-analyze">Analyze</span>
+              </button>
             </div>
           </div>
-          <div class="camera-buttons">
-            <button class="gradient-button" onclick="takePicture()">
-              Take Photo
-            </button>
-            <input
-              type="file"
-              id="fileInput"
-              accept="image/*"
-              style="display: none"
-            />
-            <button
-              class="gradient-button-secondary"
-              onclick="document.getElementById('fileInput').click()"
-            >
-              Upload Photo
-            </button>
+          <div
+            id="diagnosis-result"
+            class="result-container"
+            style="display: none"
+          >
+            <!-- Diagnosis results will be inserted here -->
           </div>
-        </div>
-        <div id="diagnosis-result" class="diagnosis-result"></div>
-      </div>
+        </section>
 
-      <!-- Plants Tab -->
-      <div class="tab-content" id="plants-tab">
-        <h2>My Plants History</h2>
-        <div class="plant-list">
-          <!-- Plants will be added here by JavaScript -->
-        </div>
-        <button class="add-button gradient-button" onclick="showAddPlantForm()">
-          + Add Plant
-        </button>
-      </div>
-
-      <!-- Market Tab -->
-      <div class="tab-content" id="market-tab">
-        <h2>Marketplace</h2>
-        <div class="market-header">
-          <div class="market-actions">
-            <button class="gradient-button" onclick="showDealerRegistration()">
-              Register as Dealer
-            </button>
-            <button
-              class="gradient-button-secondary"
-              onclick="showAddProductForm()"
-            >
-              Add Product
-            </button>
+        <!-- My Plants Tab -->
+        <section id="my-plants-tab" class="tab-content">
+          <h2 id="my-plants-title">My Plants</h2>
+          <button
+            class="primary-btn add-plant-btn"
+            onclick="showAddPlantModal()"
+          >
+            <i class="fas fa-plus"></i>
+            <span id="btn-add-plant">Add New Plant</span>
+          </button>
+          <div class="plants-grid" id="plants-container">
+            <!-- Plant cards will be inserted here -->
+            <div class="empty-state" id="no-plants-message">
+              <i class="fas fa-seedling"></i>
+              <p id="empty-plants-text">
+                You haven't added any plants yet. Start by adding your first
+                plant!
+              </p>
+            </div>
           </div>
-          <div class="search-bar">
+        </section>
+
+        <!-- Learn Tab -->
+        <section id="learn-tab" class="tab-content">
+          <h2 id="learn-title">Educational Resources</h2>
+          <div class="search-container">
             <input
               type="text"
-              placeholder="Search products..."
-              onkeyup="searchProducts(this.value)"
+              id="resource-search"
+              placeholder="Search resources..."
             />
+            <button onclick="searchResources()" title="Search resources">
+              <i class="fas fa-search"></i>
+            </button>
           </div>
-          <div class="market-filters">
-            <div class="category-pills">
+          <div class="resource-categories">
+            <button class="category-btn active" data-category="all">All</button>
+            <button class="category-btn" data-category="diseases">
+              Diseases
+            </button>
+            <button class="category-btn" data-category="nutrients">
+              Nutrients
+            </button>
+            <button class="category-btn" data-category="techniques">
+              Techniques
+            </button>
+            <button class="category-btn" data-category="videos">Videos</button>
+          </div>
+          <div class="resources-grid" id="resources-container">
+            <!-- Resource cards will be inserted here -->
+          </div>
+        </section>
+
+        <!-- Marketplace Tab -->
+        <section id="marketplace-tab" class="tab-content">
+          <h2 id="market-title">Marketplace</h2>
+          <div class="marketplace-header">
+            <div class="search-container">
+              <input
+                type="text"
+                id="market-search"
+                placeholder="Search products..."
+              />
+              <button onclick="searchProducts()" title="Search products">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+            <div class="marketplace-actions">
               <button
-                class="category-pill active"
-                onclick="filterMarket('All')"
+                class="primary-btn"
+                onclick="showDealerRegistrationModal()"
+                id="register-dealer-btn"
               >
-                All
+                Register as Dealer
               </button>
-              <button class="category-pill" onclick="filterMarket('Treatment')">
-                Treatments
+              <button
+                class="secondary-btn"
+                onclick="showAddProductModal()"
+                id="add-product-btn"
+                style="display: none"
+              >
+                Add Product
               </button>
-              <button class="category-pill" onclick="filterMarket('Nutrients')">
-                Nutrients
-              </button>
-              <button class="category-pill" onclick="filterMarket('Tools')">
-                Tools
-              </button>
-              <button class="category-pill" onclick="filterMarket('Seeds')">
-                Seeds
+              <button class="cart-btn" onclick="showCart()">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count" id="cart-count">0</span>
               </button>
             </div>
           </div>
-        </div>
-        <div class="market-items">
-          <!-- Market items will be added here by JavaScript -->
-        </div>
-        <!-- Shopping Cart Summary -->
-        <div class="cart-summary">
-          <div class="cart-info">
-            <span id="cart-count">0</span> items
-            <span id="cart-total">$0.00</span>
+          <div class="category-filter">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="treatments">
+              Treatments
+            </button>
+            <button class="filter-btn" data-filter="fertilizers">
+              Fertilizers
+            </button>
+            <button class="filter-btn" data-filter="tools">Tools</button>
+            <button class="filter-btn" data-filter="seeds">Seeds</button>
           </div>
-          <button class="gradient-button" onclick="showCart()">
-            <i class="fas fa-shopping-cart"></i> View Cart
-          </button>
-        </div>
-      </div>
+          <div class="products-grid" id="products-container">
+            <!-- Product cards will be inserted here -->
+          </div>
+        </section>
 
-      <!-- Guide Tab -->
-      <div class="tab-content" id="guide-tab">
-        <h2>Disease & Deficiency Guide</h2>
-        <div class="guide-sections">
-          <div class="guide-section">
-            <h3>Common Diseases</h3>
-            <ul class="guide-list">
-              <li>
-                <h4>Leaf Blight</h4>
-                <p>Yellow patches and brown spots on leaves</p>
-              </li>
-              <li>
-                <h4>Powdery Mildew</h4>
-                <p>White powdery spots on leaves and stems</p>
-              </li>
-              <li>
-                <h4>Root Rot</h4>
-                <p>Wilting despite moist soil, yellowing leaves</p>
+        <!-- Dashboard Tab -->
+        <section id="dashboard-tab" class="tab-content">
+          <h2 id="dashboard-title">Analytics Dashboard</h2>
+          <div class="dashboard-stats">
+            <div class="stat-card">
+              <h3 id="stats-diagnoses">Total Diagnoses</h3>
+              <p class="stat-number">0</p>
+            </div>
+            <div class="stat-card">
+              <h3 id="stats-plants">Plants Tracked</h3>
+              <p class="stat-number">0</p>
+            </div>
+            <div class="stat-card">
+              <h3 id="stats-treatments">Treatments Applied</h3>
+              <p class="stat-number">0</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <div class="chart">
+              <h3 id="chart-disease-title">Common Diseases</h3>
+              <canvas id="diseases-chart"></canvas>
+            </div>
+            <div class="chart">
+              <h3 id="chart-health-title">Plant Health Trends</h3>
+              <canvas id="health-chart"></canvas>
+            </div>
+          </div>
+          <div class="recent-activity">
+            <h3 id="recent-activity-title">Recent Activity</h3>
+            <ul id="activity-list">
+              <!-- Activity items will be inserted here -->
+              <li class="empty-state" id="no-activity-message">
+                <p id="empty-activity-text">No recent activity</p>
               </li>
             </ul>
           </div>
-          <div class="guide-section">
-            <h3>Nutrient Deficiencies</h3>
-            <ul class="guide-list">
-              <li>
-                <h4>Nitrogen (N)</h4>
-                <p>Yellowing of older leaves, stunted growth</p>
-              </li>
-              <li>
-                <h4>Phosphorus (P)</h4>
-                <p>Purple leaf veins, slow growth</p>
-              </li>
-              <li>
-                <h4>Potassium (K)</h4>
-                <p>Brown leaf edges, yellow margins</p>
-              </li>
-            </ul>
-          </div>
-        </div>
+        </section>
+      </main>
+
+      <!-- Offline Banner -->
+      <div id="offline-banner" style="display: none">
+        <i class="fas fa-wifi-slash"></i>
+        <span id="offline-text"
+          >You're offline. Some features may not be available.</span
+        >
+      </div>
+
+      <!-- Notification Container -->
+      <div id="notification-container">
+        <!-- Notifications will be inserted here -->
       </div>
     </div>
 
-    <!-- Add Plant Form Modal -->
-    <div id="addPlantModal" class="modal">
+    <!-- Modals -->
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
       <div class="modal-content">
-        <h3>Add New Plant</h3>
-        <input type="text" id="plantName" placeholder="Plant Name" />
-        <button class="gradient-button" onclick="addPlant()">Add</button>
-        <button class="gradient-button-secondary" onclick="closeModal()">
-          Cancel
-        </button>
-      </div>
-    </div>
-
-    <!-- Shopping Cart Modal -->
-    <div id="cartModal" class="modal">
-      <div class="modal-content">
-        <span class="close-button" onclick="closeModal()">&times;</span>
-        <h2>Shopping Cart</h2>
-        <div id="cartItems"></div>
-        <div class="cart-total">
-          <h3>Total: <span id="modalCartTotal">$0.00</span></h3>
-        </div>
-        <button class="gradient-button" onclick="checkout()">
-          Proceed to Checkout
-        </button>
-      </div>
-    </div>
-
-    <!-- Dealer Registration Modal -->
-    <div id="dealerRegistrationModal" class="modal">
-      <div class="modal-content dealer-modal">
-        <span
-          class="close-button"
-          onclick="closeModal('dealerRegistrationModal')"
+        <span class="close-btn" onclick="closeModal('login-modal')"
           >&times;</span
         >
-        <h2>Register as a Dealer</h2>
-        <form id="dealerRegistrationForm" onsubmit="registerDealer(event)">
-          <div class="form-group">
-            <label for="businessName">Business Name*</label>
-            <input type="text" id="businessName" name="businessName" required />
-          </div>
+        <div class="modal-tabs">
+          <button class="modal-tab active" data-tab="login">Login</button>
+          <button class="modal-tab" data-tab="register">Register</button>
+        </div>
+        <div id="login-tab-content" class="modal-tab-content active">
+          <h2 id="login-title">Login to Your Account</h2>
+          <form id="login-form">
+            <div class="form-group">
+              <label for="login-email" id="label-email">Email</label>
+              <input type="email" id="login-email" required />
+            </div>
+            <div class="form-group">
+              <label for="login-password" id="label-password">Password</label>
+              <input type="password" id="login-password" required />
+            </div>
+            <button type="submit" class="primary-btn" id="btn-login">
+              Login
+            </button>
+          </form>
+        </div>
+        <div id="register-tab-content" class="modal-tab-content">
+          <h2 id="register-title">Create New Account</h2>
+          <form id="register-form">
+            <div class="form-group">
+              <label for="register-name" id="label-name">Full Name</label>
+              <input type="text" id="register-name" required />
+            </div>
+            <div class="form-group">
+              <label for="register-email" id="label-reg-email">Email</label>
+              <input type="email" id="register-email" required />
+            </div>
+            <div class="form-group">
+              <label for="register-password" id="label-reg-password"
+                >Password</label
+              >
+              <input type="password" id="register-password" required />
+            </div>
+            <button type="submit" class="primary-btn" id="btn-register">
+              Register
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
 
+    <!-- Add Plant Modal -->
+    <div id="add-plant-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('add-plant-modal')"
+          >&times;</span
+        >
+        <h2 id="add-plant-title">Add New Plant</h2>
+        <form id="add-plant-form">
           <div class="form-group">
-            <label for="businessType">Business Type*</label>
-            <select id="businessType" name="businessType" required>
-              <option value="">Select Business Type</option>
-              <option value="manufacturer">Manufacturer</option>
-              <option value="wholesaler">Wholesaler</option>
-              <option value="retailer">Retailer</option>
-              <option value="farmer">Farmer</option>
+            <label for="plant-name" id="label-plant-name">Plant Name</label>
+            <input type="text" id="plant-name" required />
+          </div>
+          <div class="form-group">
+            <label for="plant-type" id="label-plant-type">Plant Type</label>
+            <select id="plant-type" required>
+              <option value="">Select Type</option>
+              <option value="vegetable">Vegetable</option>
+              <option value="fruit">Fruit</option>
+              <option value="grain">Grain</option>
+              <option value="flower">Flower</option>
+              <option value="herb">Herb</option>
+              <option value="other">Other</option>
             </select>
           </div>
-
           <div class="form-group">
-            <label for="specialization"
-              >Specialization* (Select multiple)</label
+            <label for="plant-date" id="label-plant-date">Planting Date</label>
+            <input type="date" id="plant-date" />
+          </div>
+          <div class="form-group">
+            <label for="plant-location" id="label-plant-location"
+              >Location</label
             >
-            <select id="specialization" name="specialization" multiple required>
-              <option value="Organic Products">Organic Products</option>
-              <option value="Pesticides">Pesticides</option>
-              <option value="Fertilizers">Fertilizers</option>
-              <option value="Tools">Tools</option>
-              <option value="Seeds">Seeds</option>
-              <option value="Plant Care">Plant Care</option>
-            </select>
-            <small>Hold Ctrl/Cmd to select multiple</small>
+            <input type="text" id="plant-location" />
           </div>
-
-          <div class="form-row">
-            <div class="form-group half">
-              <label for="contactName">Contact Person*</label>
-              <input type="text" id="contactName" name="contactName" required />
-            </div>
-            <div class="form-group half">
-              <label for="contactPhone">Phone Number*</label>
-              <input
-                type="tel"
-                id="contactPhone"
-                name="contactPhone"
-                required
-              />
-            </div>
-          </div>
-
           <div class="form-group">
-            <label for="email">Business Email*</label>
-            <input type="email" id="email" name="email" required />
+            <label for="plant-notes" id="label-plant-notes">Notes</label>
+            <textarea id="plant-notes"></textarea>
           </div>
-
-          <div class="form-group">
-            <label for="website">Website (Optional)</label>
-            <input
-              type="url"
-              id="website"
-              name="website"
-              placeholder="https://"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="address">Business Address*</label>
-            <textarea id="address" name="address" required></textarea>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group half">
-              <label for="city">City*</label>
-              <input type="text" id="city" name="city" required />
-            </div>
-            <div class="form-group half">
-              <label for="zipCode">ZIP Code*</label>
-              <input type="text" id="zipCode" name="zipCode" required />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="businessLicense">Business License Number*</label>
-            <input
-              type="text"
-              id="businessLicense"
-              name="businessLicense"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="description">Business Description*</label>
-            <textarea
-              id="description"
-              name="description"
-              required
-              placeholder="Tell us about your business and products..."
-            ></textarea>
-          </div>
-
-          <div class="form-group checkbox-group">
-            <input type="checkbox" id="terms" name="terms" required />
-            <label for="terms">I agree to the Terms and Conditions*</label>
-          </div>
-
-          <div class="form-actions">
-            <button type="submit" class="gradient-button">
-              Register as Dealer
-            </button>
-            <button
-              type="button"
-              class="gradient-button-secondary"
-              onclick="closeModal('dealerRegistrationModal')"
-            >
-              Cancel
-            </button>
-          </div>
+          <button type="submit" class="primary-btn" id="btn-save-plant">
+            Save Plant
+          </button>
         </form>
       </div>
     </div>
 
+    <!-- Dealer Registration Modal -->
+    <div id="dealer-registration-modal" class="modal">
+      <div class="modal-content">
+        <span
+          class="close-btn"
+          onclick="closeModal('dealer-registration-modal')"
+          >&times;</span
+        >
+        <h2 id="dealer-reg-title">Register as a Dealer</h2>
+        <form id="dealer-form">
+          <div class="form-group">
+            <label for="business-name" id="label-business-name"
+              >Business Name</label
+            >
+            <input type="text" id="business-name" required />
+          </div>
+          <div class="form-group">
+            <label for="business-type" id="label-business-type"
+              >Business Type</label
+            >
+            <select id="business-type" required>
+              <option value="">Select Type</option>
+              <option value="producer">Producer</option>
+              <option value="retailer">Retailer</option>
+              <option value="wholesaler">Wholesaler</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="business-phone" id="label-business-phone"
+              >Phone Number</label
+            >
+            <input type="tel" id="business-phone" required />
+          </div>
+          <div class="form-group">
+            <label for="business-email" id="label-business-email">Email</label>
+            <input type="email" id="business-email" required />
+          </div>
+          <div class="form-group">
+            <label for="business-location" id="label-business-location"
+              >Location</label
+            >
+            <input type="text" id="business-location" required />
+          </div>
+          <div class="form-group">
+            <label for="business-description" id="label-business-description"
+              >Business Description</label
+            >
+            <textarea id="business-description" required></textarea>
+          </div>
+          <button type="submit" class="primary-btn" id="btn-register-dealer">
+            Register
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div id="add-product-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('add-product-modal')"
+          >&times;</span
+        >
+        <h2 id="add-product-title">Add New Product</h2>
+        <form id="add-product-form">
+          <div class="form-group">
+            <label for="product-name" id="label-product-name"
+              >Product Name</label
+            >
+            <input type="text" id="product-name" required />
+          </div>
+          <div class="form-group">
+            <label for="product-category" id="label-product-category"
+              >Category</label
+            >
+            <select id="product-category" required>
+              <option value="">Select Category</option>
+              <option value="treatments">Treatments</option>
+              <option value="fertilizers">Fertilizers</option>
+              <option value="tools">Tools</option>
+              <option value="seeds">Seeds</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="product-price" id="label-product-price">Price</label>
+            <input
+              type="number"
+              id="product-price"
+              step="0.01"
+              min="0"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="product-description" id="label-product-description"
+              >Description</label
+            >
+            <textarea id="product-description" required></textarea>
+          </div>
+          <div class="form-group">
+            <label for="product-image" id="label-product-image"
+              >Image URL</label
+            >
+            <input type="url" id="product-image" required />
+          </div>
+          <button type="submit" class="primary-btn" id="btn-add-product">
+            Add Product
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div id="cart-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('cart-modal')"
+          >&times;</span
+        >
+        <h2 id="cart-title">Shopping Cart</h2>
+        <div id="cart-items">
+          <!-- Cart items will be inserted here -->
+          <div class="empty-cart" id="empty-cart-message">
+            <i class="fas fa-shopping-cart"></i>
+            <p id="empty-cart-text">Your cart is empty</p>
+          </div>
+        </div>
+        <div class="cart-summary" id="cart-summary" style="display: none">
+          <div class="cart-total">
+            <span id="total-label">Total:</span>
+            <span id="cart-total">$0.00</span>
+          </div>
+          <button class="primary-btn" id="checkout-btn" onclick="checkout()">
+            Checkout
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plant Details Modal -->
+    <div id="plant-details-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('plant-details-modal')"
+          >&times;</span
+        >
+        <div id="plant-details-content">
+          <!-- Plant details will be inserted here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Diagnosis Details Modal -->
+    <div id="diagnosis-details-modal" class="modal">
+      <div class="modal-content wide-modal">
+        <span class="close-btn" onclick="closeModal('diagnosis-details-modal')"
+          >&times;</span
+        >
+        <div id="diagnosis-details-content">
+          <!-- Diagnosis details will be inserted here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Model Simulation  -->
+    <script src="model-simulation.js"></script>
+    <!-- Main Application Logic -->
     <script src="app.js"></script>
+    <!-- Internationalization -->
+    <script src="i18n.js"></script>
   </body>
 </html>
